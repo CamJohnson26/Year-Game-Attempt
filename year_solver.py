@@ -110,7 +110,7 @@ def doublefactorial(n):
      else:
          return n * doublefactorial(n-2)
 
-sqrtOpp = Operator(lambda a, b: a.value + b.value if a.value == 0 or b.value < 0 or b.value > 10 or a.value > 10 else b.value ** (1.0 / a.value), "rooot")
+sqrtOpp = Operator(lambda a, b: a.value + b.value if a.value == 0 or b.value < 0 or b.value > 5 or a.value > 5 else b.value ** (1.0 / a.value), "rooot")
 addOpp = Operator(lambda a, b: a.value + b.value, "addn")
 minusOpp = Operator(lambda a, b: a.value - b.value, "subt")
 multOpp = Operator(lambda a, b: a.value * b.value, "mult")
@@ -124,7 +124,7 @@ dsqrt = Operator(lambda a: a.value if a.value < 0 else math.sqrt(math.sqrt(a.val
 
 opps = [addOpp, sqrtOpp, minusOpp, multOpp, divideOpp, powerOpp]
 #opps = []
-selfopps = [dsqrt, sqrt, factorial, doubleFactorial]
+selfopps = [sqrt, factorial, doubleFactorial]
 j = Unit(100000000)
 a = Unit(2)
 b = Unit(0)
@@ -148,7 +148,7 @@ e.nexts.append(f)
 g.nexts.append(d)
 
 
-for i in xrange(2):
+for i in xrange(4):
     for k in xrange(1):
         for p in selfopps:
             ns = [y for y in j.nexts]
@@ -163,7 +163,7 @@ for i in xrange(2):
             for n in ns:
                 apply_self_opp_to_graph(j, n, p)
 
-print_graph(j)
+#print_graph(j)
 
 rv = []
 for k in j.nexts:
