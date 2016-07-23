@@ -1,11 +1,14 @@
 import math
 from decimal import *
+import uuid
+
 getcontext().prec = 3
 
 class Unit:
     value = 0
     path = ""
     nexts = []
+    guid = None
 
     def __init__(self, value, path=None):
         self.value = value
@@ -14,9 +17,16 @@ class Unit:
             self.path = path
         else:
             self.path = str(value)
+        self.guid = uuid.uuid4()
 
     def __str__(self):
         return str(self.value)
+
+    def getLength(self):
+        if len(self.nexts) == 0:
+            return 0
+        else:
+            return max([u.getLength() for u in self.nexts]) + 1
 
 
 class Operator:
@@ -54,48 +64,61 @@ def print_graph(n, space=""):
         print_graph(nx, space)
 
 
-def apply_opp_to_graph(anchor, n, opp):
-    cached_nexts = [z for z in n.nexts]
-    for nx in cached_nexts:
-        new_unit = Unit(opp.logic(n, nx), opp.getName(n, b=nx))
-        for nnx in nx.nexts:
-            new_unit.nexts.append(nnx)
-        isBest = True
-        for unit in anchor.nexts:
-            if (unit.value == new_unit.value):
-                if len(unit.path) <= len(new_unit.path) or len(new_unit.path) > 64:
+class Applicator:
+    processed = {}
+
+    def __init__(self):
+        self.processed = {}
+
+    def apply_opp_to_graph(self, anchor, n, opp):
+        cached_nexts = [z for z in n.nexts]
+        for nx in cached_nexts:
+            new_unit = Unit(opp.logic(n, nx), opp.getName(n, b=nx))
+            for nnx in nx.nexts:
+                new_unit.nexts.append(nnx)
+            isBest = True
+            for unit in anchor.nexts:
+                if (unit.value == new_unit.value):
+                    if new_unit.getLength() == unit.getLength():
+                        isBest = False
+                if new_unit.value > 1000000:
                     isBest = False
-            if (len(new_unit.nexts) < len(unit.nexts)):
+            if isBest:
+                anchor.nexts.append(new_unit)
+            self.apply_opp_to_graph(n, nx, opp)
+
+    def apply_selfopp(self, j, opp):
+        self.processed = {}
+        ns = [y for y in j.nexts]
+        for n in ns:
+            self.apply_self_opp_to_graph(j, n, opp)
+        self.processed = {}
+
+    def apply_self_opp_to_graph(self, anchor, n, opp):
+        try:
+            self.processed[n.guid]
+            return
+        except KeyError:
+            self.processed[n.guid] = True
+            if (n.value <= 10000):
+                new_unit = Unit(opp.logic(n), opp.getName(n))
+                for nx in n.nexts:
+                    new_unit.nexts.append(nx)
                 isBest = True
-        if new_unit.value > 100000:
-            isBest = False
-        if isBest:
-            anchor.nexts.append(new_unit)
-        apply_opp_to_graph(n, nx, opp)
-
-
-def apply_self_opp_to_graph(anchor, n, opp):
-    cached_nexts = [z for z in n.nexts]
-    if (n.value <= 10000):
-        new_unit = Unit(opp.logic(n), opp.getName(n))
-        for nx in n.nexts:
-            new_unit.nexts.append(nx)
-        isBest = True
-        for unit in anchor.nexts:
-            if (unit.value == new_unit.value):
-                if len(unit.path) <= len(new_unit.path):
+                for unit in anchor.nexts:
+                    if (unit.value == new_unit.value):
+                        if new_unit.getLength() == unit.getLength():
+                            isBest = False
+                if new_unit.value > 1000000:
                     isBest = False
-        if new_unit.value > 100:
-            isBest = False
-        if new_unit.path.startswith(opp.name + "(" + opp.name + "("):
-            isBest = False
-        if isBest:
-            anchor.nexts.append(new_unit)
-    for nx in cached_nexts:
-        apply_self_opp_to_graph(n, nx, opp)
+                if isBest:
+                    anchor.nexts.append(new_unit)
+            cached_nexts = [z for z in n.nexts]
+            for nx in cached_nexts:
+                self.apply_self_opp_to_graph(n, nx, opp)
 
 
-def power(a,b):
+def power(a, b):
     try:
         if (b.value < 0 and a.value == 0) or (a.value < 0 and b.value - int(b.value) != 0) or b > 10:
             return a.value + b.value
@@ -104,13 +127,22 @@ def power(a,b):
     except OverflowError:
         return a.value + b.value
 
+def sqrtopp(a, b):
+    try:
+        if a.value == 0 or b.value < 0 or a.value < 0 or b.value > 5 or a.value > 5 or ((b.value ** (1.0 / a.value)) ** 2 == b.value):
+            return a.value + b.value
+        else:
+            return b.value ** (1.0 / a.value)
+    except OverflowError:
+        return a.value+b.value
+
 def doublefactorial(n):
      if n <= 0:
          return 1
      else:
          return n * doublefactorial(n-2)
 
-sqrtOpp = Operator(lambda a, b: a.value + b.value if a.value == 0 or b.value < 0 or b.value > 5 or a.value > 5 else b.value ** (1.0 / a.value), "rooot")
+sqrtOpp = Operator(lambda a, b: sqrtopp(a, b), "rooot")
 addOpp = Operator(lambda a, b: a.value + b.value, "addn")
 minusOpp = Operator(lambda a, b: a.value - b.value, "subt")
 multOpp = Operator(lambda a, b: a.value * b.value, "mult")
@@ -121,10 +153,13 @@ doubleFactorial = Operator(lambda a: a.value if ((a.value <= 0) or (not type(a.v
 
 sqrt = Operator(lambda a: a.value if a.value < 0 else math.sqrt(a.value), "sqrt")
 dsqrt = Operator(lambda a: a.value if a.value < 0 else math.sqrt(math.sqrt(a.value)), "dsqrt")
+nega = Operator(lambda a: -1 * a.value, "nega")
 
 opps = [addOpp, sqrtOpp, minusOpp, multOpp, divideOpp, powerOpp]
 #opps = []
-selfopps = [sqrt, factorial, doubleFactorial]
+opps = [addOpp,sqrtOpp,minusOpp,multOpp,divideOpp,powerOpp]
+selfopps = [sqrt, factorial, doubleFactorial, nega]
+
 j = Unit(100000000)
 a = Unit(2)
 b = Unit(0)
@@ -147,23 +182,20 @@ e.nexts.append(c)
 e.nexts.append(f)
 g.nexts.append(d)
 
+app = Applicator()
 
-for i in xrange(4):
+for i in xrange(3):
     for k in xrange(1):
         for p in selfopps:
-            ns = [y for y in j.nexts]
-            for n in ns:
-                apply_self_opp_to_graph(j, n, p)
+            app.apply_selfopp(j, p)
     for o in opps:
         for n in j.nexts:
-            apply_opp_to_graph(j, n, o)
-    for k in xrange(1):
-        for p in selfopps:
-            ns = [y for y in j.nexts]
-            for n in ns:
-                apply_self_opp_to_graph(j, n, p)
+            app.apply_opp_to_graph(j, n, o)
+    # for k in xrange(2):
+    #     for p in selfopps:
+    #         app.apply_selfopp(j, p)
 
-#print_graph(j)
+print_graph(j)
 
 rv = []
 for k in j.nexts:
@@ -173,7 +205,13 @@ for k in j.nexts:
 rv.sort(key = lambda x: x.value*10000000 + len(x.path)/10)
 
 index = 0
+found = 0
 for unit in rv:
+    if index >= 100:
+        break
     if unit.value != index and unit.value - int(unit.value) == 0:
         print(unit.path + " = " + str(unit.value))
+        if index > 0:
+            found += 1
     index = unit.value
+print("Found: " + str(found))
