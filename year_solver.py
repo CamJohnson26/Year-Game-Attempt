@@ -81,7 +81,7 @@ class Applicator:
                 if (unit.value == new_unit.value):
                     if new_unit.getLength() == unit.getLength():
                         isBest = False
-                if new_unit.value > 1000000:
+                if new_unit.value > 1000000 or new_unit.value < -1000000:
                     isBest = False
             if isBest:
                 anchor.nexts.append(new_unit)
@@ -109,7 +109,7 @@ class Applicator:
                     if (unit.value == new_unit.value):
                         if new_unit.getLength() == unit.getLength():
                             isBest = False
-                if new_unit.value > 1000000:
+                if new_unit.value > 1000000 or new_unit.value < -1000000:
                     isBest = False
                 if isBest:
                     anchor.nexts.append(new_unit)
@@ -169,18 +169,86 @@ e = Unit(20)
 f = Unit(16)
 g = Unit(201)
 h = Unit(2016)
+i = Unit(2.0)
+k = Unit(2.01)
+l = Unit(2.016)
+m = Unit(20.1)
+n = Unit(20.16)
+o = Unit(201.6)
+p = Unit(0.1)
+q = Unit(0.16)
+r = Unit(1.6)
+s = Unit(0.2)
+u = Unit(0.1)
+v = Unit(0.6)
+w = Unit(0.201)
+x = Unit(0.2016)
 
 j.nexts.append(a)
 j.nexts.append(e)
 j.nexts.append(g)
 j.nexts.append(h)
+j.nexts.append(i)
+j.nexts.append(k)
+j.nexts.append(l)
+j.nexts.append(m)
+j.nexts.append(n)
+j.nexts.append(o)
+j.nexts.append(p)
+j.nexts.append(q)
+j.nexts.append(u)
+j.nexts.append(w)
+j.nexts.append(x)
+
 a.nexts.append(b)
+a.nexts.append(p)
+a.nexts.append(q)
+
 b.nexts.append(c)
 b.nexts.append(f)
+b.nexts.append(p)
+b.nexts.append(q)
+b.nexts.append(r)
+b.nexts.append(u)
+
 c.nexts.append(d)
+c.nexts.append(v)
+
 e.nexts.append(c)
 e.nexts.append(f)
+e.nexts.append(p)
+e.nexts.append(q)
+e.nexts.append(r)
+e.nexts.append(u)
+
 g.nexts.append(d)
+g.nexts.append(v)
+
+i.nexts.append(c)
+i.nexts.append(f)
+i.nexts.append(p)
+i.nexts.append(q)
+i.nexts.append(r)
+i.nexts.append(u)
+
+k.nexts.append(d)
+k.nexts.append(v)
+
+m.nexts.append(d)
+m.nexts.append(v)
+
+p.nexts.append(d)
+p.nexts.append(v)
+
+s.nexts.append(b)
+s.nexts.append(p)
+s.nexts.append(q)
+
+u.nexts.append(d)
+u.nexts.append(v)
+
+w.nexts.append(d)
+w.nexts.append(v)
 
 app = Applicator()
 
@@ -195,7 +263,7 @@ for i in xrange(3):
     #     for p in selfopps:
     #         app.apply_selfopp(j, p)
 
-print_graph(j)
+#print_graph(j)
 
 rv = []
 for k in j.nexts:
